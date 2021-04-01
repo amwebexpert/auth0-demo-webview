@@ -9,6 +9,7 @@ import Spinner from './components/Spinner/Spinner';
 import { userService } from './services/user-service';
 
 export default function App() {
+  const webviewRef = React.useRef<WebView>(null);
   const [fullName, setFullName] = React.useState('');
   const [metadata, setMetadata] = React.useState('');
 
@@ -21,13 +22,21 @@ export default function App() {
   }
 
   async function onMessage(event: WebViewMessageEvent) {
-    console.log(event.nativeEvent.data);
+    const { type, data } = JSON.parse(event.nativeEvent.data);
+    alert(type);
 
-    // Here we can put the accessToken (and refresh token) into 
-    const { accessToken, userSub } = JSON.parse(event.nativeEvent.data);
-    const user = await userService.loadUserMetadata(accessToken, userSub);
-    setFullName(user.name);
-    setMetadata(JSON.stringify(user.user_metadata));
+    switch (type) {
+      case 'accessTokenRetrieved':
+        // Here we can put the accessToken into React Context
+        const { accessToken, userSub } = data;
+        const user = await userService.loadUserMetadata(accessToken, userSub);
+        setFullName(user.name);
+        setMetadata(JSON.stringify(user.user_metadata));
+        break;
+
+      default:
+        throw new Error(`Unhandled message [${type}]`);
+    }
   }
 
   return (
@@ -38,13 +47,22 @@ export default function App() {
       </View>
       <View style={styles.webView}>
         <WebView
+          ref={webviewRef}
           javaScriptEnabled={true}
+          domStorageEnabled={true}
+          sharedCookiesEnabled={true}
+          originWhitelist={["*"]}
+          scalesPageToFit={true}
           startInLoadingState={true}
+          mixedContentMode={"always"}
+          allowsInlineMediaPlayback={true}
+          allowsFullscreenVideo={true}
+          allowsBackForwardNavigationGestures={true}
+          allowsLinkPreview={false}
           cacheEnabled={false}
           cacheMode='LOAD_NO_CACHE'
           renderLoading={() => (<Spinner />)}
           onNavigationStateChange={onNavigationStateChange}
-          sharedCookiesEnabled={true}
           onMessage={onMessage}
           source={{
             uri: 'https://amwebexpert.github.io/auth0-demo-react',
