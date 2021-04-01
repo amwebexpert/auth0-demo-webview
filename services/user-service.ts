@@ -1,14 +1,9 @@
+import { User } from "./types";
 import webUtils from "./web-utils";
-
-export interface UserMetadata {
-    company: string;
-    jobTitle: string;
-    theme: string;
-}
 
 class UserService {
 
-    async loadUserMetadata(accessToken: string, userSub: string): Promise<UserMetadata> {
+    async loadUserMetadata(accessToken: string, userSub: string): Promise<User> {
         const domain = "amwebexpert.us.auth0.com";
         const url = `https://${domain}/api/v2/users/${userSub}`;
         const headers = {

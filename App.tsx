@@ -9,7 +9,8 @@ import Spinner from './components/Spinner/Spinner';
 import { userService } from './services/user-service';
 
 export default function App() {
-  const uri = 'https://amwebexpert.github.io/auth0-demo-react';
+  const [fullName, setFullName] = React.useState('');
+  const [metadata, setMetadata] = React.useState('');
 
   function onNavigationStateChange(navState: WebViewNavigation) {
     if (navState.loading) {
@@ -20,20 +21,20 @@ export default function App() {
   }
 
   async function onMessage(event: WebViewMessageEvent) {
-    if (!event.nativeEvent?.data) {
-      return;
-    }
+    console.log(event.nativeEvent.data);
 
+    // Here we can put the accessToken (and refresh token) into 
     const { accessToken, userSub } = JSON.parse(event.nativeEvent.data);
-    console.log('WebView.onMessage received!!!', accessToken, userSub);
-    const userMetadata = await userService.loadUserMetadata(accessToken, userSub);
-    console.log('userMetadata', userMetadata);
+    const user = await userService.loadUserMetadata(accessToken, userSub);
+    setFullName(user.name);
+    setMetadata(JSON.stringify(user.user_metadata));
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.userMetadata}>
-        <Text>User metadata</Text>
+        <Text>{fullName}</Text>
+        <Text>{metadata}</Text>
       </View>
       <View style={styles.webView}>
         <WebView
@@ -46,7 +47,7 @@ export default function App() {
           sharedCookiesEnabled={true}
           onMessage={onMessage}
           source={{
-            uri,
+            uri: 'https://amwebexpert.github.io/auth0-demo-react',
             headers: { 'spa-id': 'poc-react-native-webview-oauth2' },
           }}
         />
@@ -71,7 +72,8 @@ const styles = StyleSheet.create({
     borderColor: 'lightblue',
     padding: 30,
     marginTop: 30,
-    flexDirection: 'row',
-    justifyContent: 'center'
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
