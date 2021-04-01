@@ -7,6 +7,7 @@ import { WebViewMessageEvent, WebViewNavigation } from 'react-native-webview/lib
 
 import Spinner from './components/Spinner/Spinner';
 import { userService } from './services/user-service';
+import { Button } from 'react-native-paper';
 
 export default function App() {
   const webviewRef = React.useRef<WebView>(null);
@@ -14,16 +15,12 @@ export default function App() {
   const [metadata, setMetadata] = React.useState('');
 
   function onNavigationStateChange(navState: WebViewNavigation) {
-    if (navState.loading) {
-      console.log(`==> ${navState.url}...`);
-    } else {
-      console.log(`==> ${navState.url}.`);
-    }
+    console.log('==> ${navState.url}' + navState.loading ? '...' : '.');
   }
 
   async function onMessage(event: WebViewMessageEvent) {
     const { type, data } = JSON.parse(event.nativeEvent.data);
-    alert(type);
+    alert(`NATIVE: receiving [${type}]`);
 
     switch (type) {
       case 'accessTokenRetrieved':
@@ -35,8 +32,17 @@ export default function App() {
         break;
 
       default:
-        throw new Error(`Unhandled message [${type}]`);
+        console.log(`Unhandled message [${type}]`);
     }
+  }
+
+  async function postMessageToWebapp(type: string, data: string) {
+    if (!webviewRef.current) {
+      return;
+    }
+
+    const message = { type, data };
+    webviewRef.current.injectJavaScript(`window.postMessage(${JSON.stringify(message)}, '*'); true;`);
   }
 
   return (
@@ -44,10 +50,17 @@ export default function App() {
       <View style={styles.userMetadata}>
         <Text>{fullName}</Text>
         <Text>{metadata}</Text>
+        <Button icon="logout" onPress={() => postMessageToWebapp('getValidAccessToken', '')}>get Valid Token</Button>
       </View>
       <View style={styles.webView}>
         <WebView
           ref={webviewRef}
+          onMessage={onMessage}
+          source={{
+            uri: 'https://amwebexpert.github.io/auth0-demo-react',
+            headers: { 'spa-id': 'poc-react-native-webview-oauth2' },
+          }}
+          onNavigationStateChange={onNavigationStateChange}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           sharedCookiesEnabled={true}
@@ -62,12 +75,6 @@ export default function App() {
           cacheEnabled={false}
           cacheMode='LOAD_NO_CACHE'
           renderLoading={() => (<Spinner />)}
-          onNavigationStateChange={onNavigationStateChange}
-          onMessage={onMessage}
-          source={{
-            uri: 'https://amwebexpert.github.io/auth0-demo-react',
-            headers: { 'spa-id': 'poc-react-native-webview-oauth2' },
-          }}
         />
       </View>
       <StatusBar style="auto" />
